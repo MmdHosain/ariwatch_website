@@ -8,19 +8,27 @@ import { useHeroCarousel } from "./hero/useHeroCarousel";
 import { CLASSIC_HERO_SLIDES } from "./hero/classic.data";
 import { ClassicHeroText } from "./hero/ClassicHeroText";
 import { ClassicHeroVisual } from "./hero/ClassicHeroVisual";
-import type { HeroStyle } from "../../services/store-settings";
+import { AriWatchHero } from "./hero/AriWatchHero";
+import { DEFAULT_STOREFRONT_CONFIG, type HeroConfig, type HeroStyle } from "../../services/store-settings";
 
 interface HeroSectionProps {
   lang: "en" | "fa";
-  dict: { home: HeroCopy };
+  dict: { home: HeroCopy & Record<string, any> };
   isFa: boolean;
   heroStyle?: HeroStyle;
+  config?: HeroConfig;
 }
 
-export function HeroSection({ lang, dict, isFa, heroStyle = "watch-photos" }: HeroSectionProps) {
+export function HeroSection({ lang, dict, isFa, heroStyle = "watch-photos", config }: HeroSectionProps) {
+  const cfg = config || DEFAULT_STOREFRONT_CONFIG.hero;
   const classic = heroStyle === "classic-clock";
   const slides = classic ? CLASSIC_HERO_SLIDES : HERO_SLIDES;
   const carousel = useHeroCarousel(slides);
+
+  if (!cfg.enabled) return null;
+  if (heroStyle === "ariwatch") {
+    return <AriWatchHero lang={lang} dict={dict} isFa={isFa} config={cfg} />;
+  }
 
   return (
     <section
@@ -37,11 +45,11 @@ export function HeroSection({ lang, dict, isFa, heroStyle = "watch-photos" }: He
       }}
     >
       {classic ? <>
-        <ClassicHeroText lang={lang} copy={dict.home} isFa={isFa} />
+        <ClassicHeroText lang={lang} copy={dict.home} isFa={isFa} config={cfg} />
         <ClassicHeroVisual activeSlide={CLASSIC_HERO_SLIDES[carousel.currentSlide]}
           currentSlide={carousel.currentSlide} totalSlides={slides.length} isFa={isFa} paused={carousel.isPaused} />
       </> : <div className="mx-auto grid w-full max-w-[1400px] items-center gap-7 md:grid-cols-[0.9fr_1.1fr] md:gap-8 lg:gap-16">
-        <HeroText lang={lang} copy={dict.home} isFa={isFa} />
+        <HeroText lang={lang} copy={dict.home} isFa={isFa} config={cfg} />
         <HeroVisual
           activeSlide={HERO_SLIDES[carousel.currentSlide]}
           currentSlide={carousel.currentSlide}
@@ -50,15 +58,17 @@ export function HeroSection({ lang, dict, isFa, heroStyle = "watch-photos" }: He
           paused={carousel.isPaused}
         />
       </div>}
-      <HeroIndicators
-        slides={slides}
-        currentSlide={carousel.currentSlide}
-        onSelectSlide={carousel.selectSlide}
-        paused={carousel.paused}
-        onSetPaused={carousel.setPaused}
-        isFa={isFa}
-        classic={classic}
-      />
+      {cfg.showIndicators && (
+        <HeroIndicators
+          slides={slides}
+          currentSlide={carousel.currentSlide}
+          onSelectSlide={carousel.selectSlide}
+          paused={carousel.paused}
+          onSetPaused={carousel.setPaused}
+          isFa={isFa}
+          classic={classic}
+        />
+      )}
     </section>
   );
 }

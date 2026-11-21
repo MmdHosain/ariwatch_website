@@ -1,30 +1,36 @@
 import Link from "next/link";
 
-export function EditorialText({ activeSlide, isFa, discoverText, currentSlide, lang }: { activeSlide: any, isFa: boolean, discoverText: string, currentSlide: number, lang: string }) {
+export function EditorialText({
+  activeSlide,
+  discoverText,
+  currentSlide,
+  lang,
+}: {
+  activeSlide: any;
+  isFa: boolean;
+  discoverText: string;
+  currentSlide: number;
+  lang: string;
+}) {
   return (
-    <div className="w-full flex flex-col justify-center animate-fade-in-up" key={`text-${currentSlide}`} style={{ animationDelay: '200ms' }}>
-      <h3 className="text-4xl md:text-6xl lg:text-7xl font-serif text-ariwatch-red mb-4 md:mb-6 uppercase tracking-wider drop-shadow-sm">
+    <div className="w-full flex flex-col justify-center" key={`text-${currentSlide}`}>
+      <h3 className="text-3xl md:text-4xl lg:text-5xl font-light text-[#c8102e] mb-3 uppercase tracking-[0.14em]">
         {activeSlide.brand}
       </h3>
-      <h4 className="text-sm md:text-lg font-bold tracking-[0.25em] text-ariwatch-black mb-6 md:mb-8 uppercase">
+      <h4 className="text-xs md:text-sm font-medium tracking-[0.18em] text-[#1a1a1a] mb-6 uppercase">
         {activeSlide.title}
       </h4>
-      <p className="text-sm md:text-base text-ariwatch-gray leading-[2] mb-10 max-w-lg">
+      <p className="text-xs md:text-sm text-gray-600 leading-relaxed mb-7 max-w-md">
         {activeSlide.desc}
       </p>
-      
-      {/* Animated Button */}
-      <Link href={`/${lang}/watches`} className="group flex items-center gap-4 text-[10px] md:text-xs font-bold tracking-widest text-ariwatch-black uppercase self-start">
-        <span className="border-b border-ariwatch-black pb-1 group-hover:text-ariwatch-red group-hover:border-ariwatch-red transition-colors duration-300">
-          {discoverText}
-        </span>
-        <svg 
-          className={`w-4 h-4 text-ariwatch-black group-hover:text-ariwatch-red transition-all duration-300 ${isFa ? 'group-hover:-translate-x-2 rotate-180' : 'group-hover:translate-x-2'}`} 
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+      {discoverText && (
+        <Link
+          href={`/${lang}/watches`}
+          className="text-xs font-bold text-[#1a1a1a] border-b border-gray-400 pb-1 self-start hover:text-[#c8102e] hover:border-[#c8102e] transition-colors"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-        </svg>
-      </Link>
+          {discoverText}
+        </Link>
+      )}
     </div>
   );
 }

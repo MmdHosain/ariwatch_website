@@ -1,33 +1,50 @@
-export function EditorialControls({ 
-  handlePrev, 
-  handleNext, 
-  currentSlide, 
-  totalSlides, 
-  isFa 
-}: { 
-  handlePrev: () => void; 
-  handleNext: () => void; 
-  currentSlide: number; 
-  totalSlides: number; 
-  isFa: boolean; 
+export function EditorialControls({
+  handlePrev,
+  handleNext,
+  currentSlide,
+  totalSlides,
+  showProgressBar = true,
+}: {
+  handlePrev: () => void;
+  handleNext: () => void;
+  currentSlide: number;
+  totalSlides: number;
+  isFa: boolean;
+  showProgressBar?: boolean;
 }) {
+  const progressPercent = ((currentSlide + 1) / Math.max(1, totalSlides)) * 100;
+
   return (
-    <div className={`absolute bottom-0 ${isFa ? 'right-0' : 'left-0'} flex bg-white border-t border-gray-200 z-30 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]`} dir="ltr">
-      <button onClick={handlePrev} className="w-14 h-14 md:w-20 md:h-20 flex items-center justify-center text-ariwatch-black hover:bg-gray-50 transition-colors border-r border-gray-200 group">
-        <svg className="w-5 h-5 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 19l-7-7 7-7"></path>
-        </svg>
-      </button>
-      <button onClick={handleNext} className="w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-ariwatch-red text-white hover:bg-red-800 transition-colors group">
-        <svg className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5l7 7-7 7"></path>
-        </svg>
-      </button>
-      <div className="h-14 md:h-20 flex items-center px-6 md:px-8 border-l border-gray-200">
-        <span className="text-[10px] md:text-xs font-bold tracking-[0.3em] text-ariwatch-gray">
-          <span className="text-ariwatch-black">{currentSlide + 1}</span> / {totalSlides}
+    <>
+      <div className="max-w-[1440px] mx-auto px-6 md:px-12 pt-8 flex items-center gap-2" dir="ltr">
+        <button
+          type="button"
+          onClick={handlePrev}
+          aria-label="Previous brand"
+          className="w-9 h-9 bg-white border border-gray-200 flex items-center justify-center text-xs text-ariwatch-black hover:bg-gray-50 transition-colors"
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          onClick={handleNext}
+          aria-label="Next brand"
+          className="w-9 h-9 bg-[#c8102e] text-white flex items-center justify-center text-xs hover:bg-red-800 transition-colors"
+        >
+          ›
+        </button>
+        <span className="ms-2 text-[11px] font-medium tracking-widest text-gray-600">
+          {currentSlide + 1} / {totalSlides}
         </span>
       </div>
-    </div>
+      {showProgressBar && (
+        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gray-200" dir="ltr">
+          <div
+            className="h-full bg-[#c8102e] transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      )}
+    </>
   );
 }

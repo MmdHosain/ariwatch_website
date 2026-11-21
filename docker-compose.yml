@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-luxe_password}
       POSTGRES_DB: ${POSTGRES_DB:-luxe_watches}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5436:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,9 +21,11 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgres://${POSTGRES_USER:-luxe_user}:${POSTGRES_PASSWORD:-luxe_password}@db:5432/${POSTGRES_DB:-luxe_watches}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
       ADMIN_MOBILES: ${ADMIN_MOBILES:-09123456789}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
       API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:4000}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
       ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-00000000-0000-0000-0000-000000000000}
       ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-true}
       SEED_CATALOG: ${SEED_CATALOG:-true}
@@ -42,6 +44,7 @@ services:
       INSTAGRAM_API_VERSION: ${INSTAGRAM_API_VERSION:-}
       TOROB_ENABLED: ${TOROB_ENABLED:-false}
       TOROB_AUDIENCE: ${TOROB_AUDIENCE:-}
+      TOROB_PUBLIC_KEY: ${TOROB_PUBLIC_KEY:-}
       BASALAM_ENABLED: ${BASALAM_ENABLED:-false}
       BASALAM_ACCESS_TOKEN: ${BASALAM_ACCESS_TOKEN:-}
       BASALAM_VENDOR_ID: ${BASALAM_VENDOR_ID:-}
@@ -56,7 +59,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -64,15 +67,22 @@ services:
     build:
       context: ./frontend
       args:
+        NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:-http://localhost:4000}
         NEXT_PUBLIC_SITE_URL: ${FRONTEND_ORIGIN:-http://localhost:3000}
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:-http://localhost:4000}
+      NEXT_PUBLIC_SITE_URL: ${FRONTEND_ORIGIN:-http://localhost:3000}
       INTERNAL_API_URL: http://backend:4000
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 volumes:
   postgres_data:
   catalog_media:

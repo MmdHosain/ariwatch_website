@@ -6,26 +6,44 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { AuthModal } from "../auth/AuthModal";
 import { authService } from "../../services/auth.service";
 import { useCart } from "../../context/CartContext";
+import { DEFAULT_STOREFRONT_CONFIG, type HeaderConfig, type HeroStyle } from "../../services/store-settings";
+import { buildMegaSections, DesktopMegaBar } from "./header/MegaMenu";
+import { SearchDrawer } from "./header/SearchDrawer";
+import { FullMenuDrawer } from "./header/FullMenuDrawer";
 
 interface HeaderProps {
   lang: 'en' | 'fa';
   dict: any;
   isFa: boolean;
+  config?: HeaderConfig;
+  heroStyle?: HeroStyle;
 }
 
-export function Header({ lang, dict, isFa }: HeaderProps) {
+export function Header({ lang, dict, isFa, config, heroStyle = 'ariwatch' }: HeaderProps) {
+  const cfg = config || DEFAULT_STOREFRONT_CONFIG.header;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { cartItems } = useCart();
 
+  const isHome = /^\/(en|fa)\/?$/.test(pathname || '');
+  const isOverlay = isHome && heroStyle === 'ariwatch' && !scrolled;
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const targetLanguage = lang === 'fa' ? 'en' : 'fa';
   const languagePath = /^\/(en|fa)\/blog\/.+/.test(pathname || '') ? `/${targetLanguage}/blog` :
     (pathname || `/${lang}`).replace(/^\/(en|fa)(?=\/|$)/, `/${targetLanguage}`);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const sync = () => {
@@ -41,133 +59,122 @@ export function Header({ lang, dict, isFa }: HeaderProps) {
     return () => { window.removeEventListener('ariwatch:auth', sync); window.removeEventListener('storage', sync); };
   }, []);
 
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setIsMenuOpen(false); };
-    document.addEventListener('keydown', close);
-    return () => { document.body.style.overflow = previous; document.removeEventListener('keydown', close); };
-  }, [isMenuOpen]);
+  if (!cfg.enabled) return null;
 
-  const handleAuthSuccess = () => {
-    setIsAuthenticated(true);
-  };
+  const headerBg = isOverlay
+    ? 'bg-transparent border-transparent'
+    : 'bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)]';
+  const textColor = isOverlay ? 'text-white' : 'text-ariwatch-black hover:text-ariwatch-red';
+  const logoColor = '#d91424';
+  const megaSections = buildMegaSections(lang, dict, cfg);
 
   return (
     <>
-      <header className="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100/30 transition-all duration-300">
-        <div className="flex justify-between items-center px-6 md:px-12 py-4 max-w-[1600px] mx-auto" dir="ltr">
-          
-          {/* Left side (Search) */}
-          <div className="flex-1 flex justify-start items-center">
-            <Link href={`/${lang}/watches`} className="p-2 group flex items-center justify-center gap-3" aria-label="Search">
-              <svg className="w-5 h-5 text-[#121212] group-hover:text-ariwatch-red transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span className="hidden md:block text-[10px] font-bold tracking-widest uppercase text-ariwatch-black group-hover:text-ariwatch-red transition-colors">
-                {dict.header.search}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,box-shadow] duration-300 ${headerBg}`}
+        dir="ltr"
+      >
+        <div className="max-w-[1440px] mx-auto px-6 md:px-12 h-16 md:h-20 flex items-center justify-between">
+          <div className="flex-1 flex items-center gap-5">
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen(true)}
+              className={`flex items-center gap-2.5 text-[11px] font-bold tracking-[0.18em] uppercase transition-colors ${textColor}`}
+              aria-label={dict.header.menu}
+            >
+              <span className="flex flex-col gap-1 w-4" aria-hidden="true">
+                <span className={`block h-[1.5px] w-4 ${isOverlay ? 'bg-white' : 'bg-ariwatch-black'}`} />
+                <span className={`block h-[1.5px] w-4 ${isOverlay ? 'bg-white' : 'bg-ariwatch-black'}`} />
+                <span className={`block h-[1.5px] w-3 ${isOverlay ? 'bg-white' : 'bg-ariwatch-black'}`} />
               </span>
-            </Link>
-          </div>
-
-          {/* Center (Logo) */}
-          <Link href={`/${lang}`} className="flex-1 flex flex-col items-center justify-center cursor-pointer group">
-             <div className="w-8 h-8 rounded-full border border-ariwatch-red flex items-center justify-center text-ariwatch-red mb-1 group-hover:bg-ariwatch-red group-hover:text-white transition-colors duration-500">
-               <span className="text-sm font-serif">A</span>
-             </div>
-             <h1 className="text-sm md:text-base font-serif text-ariwatch-red tracking-[0.3em]">ARIWATCH</h1>
-          </Link>
-
-          {/* Right side (Cart & Hamburger Menu) */}
-          <div className="flex-1 flex justify-end items-center gap-4 md:gap-6">
-            <Link href={languagePath + (searchParams.toString() ? `?${searchParams.toString()}` : '')} hrefLang={targetLanguage} className="text-xs font-bold" aria-label={isFa ? 'English' : 'فارسی'}>{isFa ? 'EN' : 'فا'}</Link>
-            <Link href={`/${lang}/cart`} className="p-2 group flex items-center justify-center gap-2 relative" aria-label="Cart">
-              <svg className="w-5 h-5 text-[#121212] group-hover:text-ariwatch-red transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              {cartCount > 0 && (
-                <span className="absolute top-0 right-0 w-4 h-4 bg-ariwatch-red text-white text-[9px] font-bold flex items-center justify-center rounded-full">
-                  {cartCount}
-                </span>
-              )}
-              <span className="hidden md:block text-[10px] font-bold tracking-widest uppercase text-ariwatch-black group-hover:text-ariwatch-red transition-colors">
-                {dict.header.cart}
-              </span>
-            </Link>
-
-            <div className="w-[1px] h-4 bg-gray-200 hidden md:block mx-1"></div>
-
-            <button onClick={() => setIsMenuOpen(true)} className="p-2 flex flex-col gap-[5px] items-end group" aria-label={isFa ? 'منو' : 'Menu'} aria-expanded={isMenuOpen} aria-controls="store-menu">
-              <span className="w-6 h-[1.5px] bg-[#121212] group-hover:bg-ariwatch-red transition-colors duration-300"></span>
-              <span className="w-4 h-[1.5px] bg-[#121212] group-hover:bg-ariwatch-red transition-all duration-300 group-hover:w-6"></span>
-              <span className="w-6 h-[1.5px] bg-[#121212] group-hover:bg-ariwatch-red transition-colors duration-300"></span>
+              <span className="hidden sm:inline">{dict.header.menu}</span>
             </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Full Screen Mobile Menu */}
-      {isMenuOpen && (
-        <div id="store-menu" className="fixed inset-0 bg-white z-[60] flex flex-col animate-fade-in-scale overflow-y-auto">
-          <div className="flex justify-between items-center px-6 md:px-12 py-6 border-b border-gray-100" dir="ltr">
-            <div className="flex-1"></div>
-            <div className="flex-1 flex justify-center">
-              <h2 className="text-xl font-serif text-ariwatch-black tracking-widest">ARIWATCH</h2>
-            </div>
-            <div className="flex-1 flex justify-end">
-              <button onClick={() => setIsMenuOpen(false)} aria-label={isFa ? 'بستن منو' : 'Close menu'} className="p-2 text-ariwatch-black hover:text-ariwatch-red transition-colors">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <nav className="flex flex-col items-center justify-center flex-1 gap-4 py-6 text-lg md:text-2xl font-serif uppercase tracking-widest">
-            <Link href={`/${lang}`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{dict.header.home}</Link>
-            <Link href={`/${lang}/watches`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{dict.header.watches}</Link>
-            <Link href={`/${lang}/wishlist`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{isFa ? 'علاقه‌مندی‌ها' : 'Wishlist'}</Link>
-            <Link href={`/${lang}/compare`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{isFa ? 'مقایسه ساعت‌ها' : 'Compare watches'}</Link>
-            <Link href={`/${lang}/blog`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{isFa ? 'مجله آریواچ' : 'Journal'}</Link>
-            <Link href={`/${lang}/story`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{dict.header.story}</Link>
-            <Link href={`/${lang}/support`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{dict.header.support}</Link>
-            <Link href={`/${lang}/concierge`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{dict.header.concierge}</Link>
-            <Link href={`/${lang}/orders`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{isFa ? 'سفارش‌های من' : 'My orders'}</Link>
-            {isAdmin && <Link href={`/${lang}/admin`} onClick={() => setIsMenuOpen(false)} className="hover:text-ariwatch-red transition-colors">{isFa ? 'مدیریت فروشگاه' : 'Store management'}</Link>}
-            
-            <div className="w-12 h-[1px] bg-gray-200 my-2"></div>
-
-            {/* Authentication / Account Links */}
-            {isAuthenticated ? (
-              <button 
-                onClick={() => {
-                    void authService.logout();
-                    setIsAuthenticated(false);
-                    setIsMenuOpen(false);
-                }} 
-                className="text-sm font-inter font-bold tracking-widest text-ariwatch-gray hover:text-ariwatch-red transition-colors"
+            {cfg.showWhatsapp && (
+              <a
+                href={cfg.whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`hidden lg:inline text-[11px] font-bold tracking-[0.18em] uppercase transition-colors ${textColor}`}
               >
-                {dict.header.logout}
-              </button>
-            ) : (
-              <button 
-                onClick={() => { setIsMenuOpen(false); setIsAuthModalOpen(true); }} 
-                className="text-sm font-inter font-bold tracking-widest text-ariwatch-gray hover:text-ariwatch-red transition-colors"
+                {dict.header.contactWhatsapp || 'WHATSAPP'}
+              </a>
+            )}
+          </div>
+
+          <div className="flex-1 text-center">
+            <Link
+              href={`/${lang}`}
+              className="inline-block text-xl md:text-2xl font-bold tracking-[0.24em] font-serif transition-transform hover:scale-[1.01]"
+              style={{ color: logoColor }}
+            >
+              ARIWATCH
+            </Link>
+          </div>
+
+          <div className="flex-1 flex justify-end items-center gap-4 md:gap-6">
+            {cfg.showLanguageToggle && (
+              <Link
+                href={languagePath + (searchParams.toString() ? `?${searchParams.toString()}` : '')}
+                hrefLang={targetLanguage}
+                className={`hidden sm:inline text-[11px] font-bold tracking-widest uppercase ${textColor}`}
+                aria-label={isFa ? 'English' : 'فارسی'}
               >
-                {dict.header.account}
+                {isFa ? 'EN' : 'فا'}
+              </Link>
+            )}
+            {cfg.showSearch && (
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(true)}
+                className={`text-[11px] font-bold tracking-[0.18em] uppercase transition-colors ${textColor}`}
+                aria-label="Search"
+              >
+                {dict.header.search}
               </button>
             )}
-          </nav>
+            {cfg.showAccount && (
+              isAuthenticated ? (
+                <Link href={`/${lang}/orders`} className={`hidden md:inline text-[11px] font-bold tracking-[0.18em] uppercase ${textColor}`}>
+                  {dict.header.account}
+                </Link>
+              ) : (
+                <button type="button" onClick={() => setIsAuthModalOpen(true)} className={`hidden md:inline text-[11px] font-bold tracking-[0.18em] uppercase ${textColor}`}>
+                  {dict.header.account}
+                </button>
+              )
+            )}
+            {cfg.showCart && (
+              <Link href={`/${lang}/cart`} className={`flex items-center gap-1.5 text-[11px] font-bold tracking-[0.18em] uppercase ${textColor}`} aria-label="Cart">
+                <span>{dict.header.cart}</span>
+                {cartCount > 0 && (
+                  <span className="w-4 h-4 bg-ariwatch-red text-white text-[9px] font-bold flex items-center justify-center rounded-full">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            )}
+          </div>
         </div>
-      )}
+        {!isOverlay && <DesktopMegaBar lang={lang} dict={dict} config={cfg} />}
+      </header>
 
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-        dict={dict} 
-        isFa={isFa} 
-        onSuccess={handleAuthSuccess}
+      <FullMenuDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        isFa={isFa}
+        lang={lang}
+        dict={dict}
+        cfg={cfg}
+        megaSections={megaSections}
+        languagePath={languagePath}
+        isAdmin={isAdmin}
+        isAuthenticated={isAuthenticated}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onLogout={() => setIsAuthenticated(false)}
       />
+
+      <SearchDrawer isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} lang={lang} dict={dict} isFa={isFa} />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} dict={dict} isFa={isFa} onSuccess={() => setIsAuthenticated(true)} />
     </>
   );
 }

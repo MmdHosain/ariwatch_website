@@ -22,9 +22,11 @@ const config: Config = {
         widest: '.25em',
       },
       fontFamily: {
-        inter: ['var(--font-inter)', 'InterLocal', 'system-ui', 'sans-serif'],
-        vazir: ['var(--font-vazir)', 'VazirmatnLocal', 'Tahoma', 'sans-serif'],
-        serif: ['var(--font-playfair)', 'Georgia', 'serif'],
+        sans: ['Manrope', 'Vazirmatn', 'VazirmatnLocal', 'sans-serif'],
+        inter: ['Manrope', 'var(--font-inter)', 'InterLocal', 'system-ui', 'sans-serif'],
+        vazir: ['Vazirmatn', 'var(--font-vazir)', 'VazirmatnLocal', 'Tahoma', 'sans-serif'],
+        manrope: ['Manrope', '"Avenir Next"', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        serif: ['Didot', '"Bodoni MT"', '"Times New Roman"', 'Georgia', 'serif'],
       },
       keyframes: {
         progress: {

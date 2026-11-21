@@ -1,0 +1,45 @@
+# Fly.io configuration for the ARIWATCH Express API.
+# Deploy from repository root:
+#   fly launch --config deploy/fly.backend.toml --no-deploy
+#   fly volumes create catalog_media --size 5 --region fra
+#   fly secrets set DATABASE_URL=... ADMIN_MOBILES=... FRONTEND_ORIGIN=... API_PUBLIC_URL=... ZARINPAL_MERCHANT_ID=... OTP_PROVIDER_URL=... OTP_PROVIDER_TOKEN=...
+#   fly deploy --config deploy/fly.backend.toml
+
+app = "ariwatch-api"
+primary_region = "fra"
+
+[build]
+  dockerfile = "../backend/Dockerfile"
+  context = "../backend"
+
+[env]
+  NODE_ENV = "production"
+  HOST = "0.0.0.0"
+  PORT = "4000"
+  TRUST_PROXY = "1"
+  SEED_CATALOG = "false"
+  ZARINPAL_SANDBOX = "false"
+  MEDIA_DIRECTORY = "/app/uploads/catalog"
+
+[mounts]
+  source = "catalog_media"
+  destination = "/app/uploads/catalog"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "GET"
+    path = "/ready"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

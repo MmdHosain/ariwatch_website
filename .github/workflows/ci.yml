@@ -1,0 +1,66 @@
+name: CI & Production Build Verification
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  validate:
+    name: Architecture, Tests & Builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Check module sizes & Clean Architecture boundaries
+        run: node scripts/check-file-sizes.cjs
+
+      - name: Backend build & tests
+        working-directory: backend
+        run: |
+          pnpm build
+          pnpm test
+
+      - name: Frontend typecheck, tests & production build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://api.example.com
+          NEXT_PUBLIC_SITE_URL: https://shop.example.com
+          NEXT_OUTPUT_STANDALONE: "true"
+        run: |
+          pnpm typecheck
+          pnpm test
+          pnpm build
+
+  docker:
+    name: Docker Image Build Check
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend production image
+        run: docker build -t ariwatch-backend:ci ./backend
+
+      - name: Build frontend production image
+        run: |
+          docker build -t ariwatch-frontend:ci \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.example.com \
+            --build-arg NEXT_PUBLIC_SITE_URL=https://shop.example.com \
+            ./frontend

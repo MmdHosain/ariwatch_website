@@ -4,6 +4,18 @@
     "heroSubheadline": "Clarity in authenticity, transparent pricing, and borderless access",
     "ctaPrimary": "VIEW COLLECTIONS",
     "ctaSecondary": "THE ARIWATCH STORY",
+    "ariwatchHero": {
+      "slide1Badge": "TIMEPIECES WITH CLEAR PRODUCT TYPE",
+      "slide1Title": "ARIWATCH",
+      "slide1Subtitle": "ORIGINAL & HIGH COPY WATCHES CLEARLY SEPARATED",
+      "slide1Cta1": "VIEW WATCHES",
+      "slide1Cta2": "CUSTOM ORDER",
+      "slide2Badge": "SELECTED WATCHES & CUSTOM REQUESTS",
+      "slide2Title": "CHOOSE WITH CLARITY",
+      "slide2Subtitle": "PRODUCT TYPE, PRICE & AVAILABILITY CONFIRMED BEFORE ORDERING",
+      "slide2Cta1": "EXPLORE OPTIONS",
+      "slide2Cta2": "REQUEST A MODEL"
+    },
     "viewHighCopy": "VIEW HIGH COPY",
     "shopByBrand": "SHOP BY BRAND",
     "brandSubtitle": "ORIGINAL BRANDS / HIGH COPY BRANDS",
@@ -21,6 +33,7 @@
     "chooseTypeDesc": "Original, non-original and custom-order watches are presented separately.",
     "pathOriginal": "ORIGINAL",
     "pathOriginalSub": "SELECTED & CLEARLY LABELLED",
+    "pathOriginalTitle": "ORIGINAL WATCHES",
     "pathOriginalDesc": "Product status and availability are confirmed before purchase.",
     "pathHighCopy": "NON-ORIGINAL",
     "pathHighCopySub": "SEPARATE PRODUCT CATEGORY",
@@ -38,26 +51,31 @@
     "discover": "Discover the watches",
     "slides": [
       {
+        "key": "cartier",
         "brand": "CARTIER",
         "title": "TIMELESS FORMS",
         "desc": "A curated view of Cartier forms, straps and finishes, presented with a clean editorial rhythm."
       },
       {
+        "key": "rolex",
         "brand": "ROLEX",
         "title": "STEEL, GOLD AND COLOUR",
         "desc": "A focused look at steel, gold, black and blue combinations, paired with layered product imagery."
       },
       {
+        "key": "omega",
         "brand": "OMEGA",
         "title": "SPEEDMASTER & SEAMASTER",
         "desc": "Dial, case and strap details are brought forward in a tighter and more refined composition."
       },
       {
+        "key": "patek",
         "brand": "PATEK PHILIPPE",
         "title": "RUBBER STRAPS, DISTINCT COLOURS",
         "desc": "Black, blue and green variations create a clean comparison of tone, proportion and finish."
       },
       {
+        "key": "swatch",
         "brand": "OMEGA SWATCH",
         "title": "A BRIGHTER TAKE ON TIME",
         "desc": "A vivid selection of white, red, black and gold for a more expressive visual story."
@@ -88,7 +106,15 @@
     "cta": "VIEW WATCHES",
     "productTitle": "ROLEX STEEL & GOLD",
     "productDesc": "Wrist model image plus a clean product shot",
-    "details": "Details"
+    "details": "Details",
+    "slides": [
+      { "title": "OMEGA SEAMASTER", "desc": "Wrist image paired with a clean vertical product shot", "query": "Omega Seamaster" },
+      { "title": "IWC CHRONOGRAPH", "desc": "Model image paired with a white-background product shot", "query": "IWC" },
+      { "title": "ROLEX STEEL & GOLD", "desc": "Wrist model image plus a clean product shot", "query": "Rolex" },
+      { "title": "IWC SUBSECONDS", "desc": "Model and watch paired in the same layout system", "query": "IWC" },
+      { "title": "ROLEX SPORT", "desc": "A matched slide with model image and product image", "query": "Rolex" },
+      { "title": "CARTIER", "desc": "Cartier uses a model image paired with a clean vertical watch shot", "query": "Cartier" }
+    ]
   },
   "storyTeaser": {
     "title": "THE WORLD OF ARIWATCH",

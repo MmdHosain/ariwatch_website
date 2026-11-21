@@ -6,10 +6,23 @@ import { applySchema } from './migrate';
 import type { Database, QueryExecutor } from '../../domain/ports/Database';
 export type { Database } from '../../domain/ports/Database';
 
+function databaseSslConfig() {
+  const mode = (process.env.DATABASE_SSL || '').toLowerCase();
+  if (!mode || mode === 'false' || mode === 'disable' || mode === '0') return undefined;
+  return { rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false' };
+}
+
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: databaseSslConfig(),
+  max: Math.max(2, Number(process.env.DATABASE_POOL_MAX || 20)),
+  idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
   statement_timeout: 30_000,
+});
+
+pool.on('error', error => {
+  console.error('Unexpected PostgreSQL pool error:', error.message);
 });
 
 export const query = (text: string, params?: any[]) => pool.query(text, params);
@@ -27,14 +40,17 @@ export async function transaction<T>(work: (client: QueryExecutor) => Promise<T>
     throw error;
   } finally { client.release(); }
 }
+
 export const database: Database = { query, transaction };
+
 export async function initDb(): Promise<void> {
   const seeds = await readFile(resolve(__dirname, 'init.sql'), 'utf8');
   await transaction(async client => {
     await client.query("SELECT pg_advisory_xact_lock(hashtext('watch-shop-schema'))");
     await applySchema(client);
     if (process.env.SEED_CATALOG !== 'false') await client.query(seeds);
-    const admins = (process.env.ADMIN_MOBILES ?? (process.env.NODE_ENV === 'production' ? '' : '09123456789')).split(',').map(m => m.trim()).filter(Boolean).map(mobileNumber);
+    const admins = (process.env.ADMIN_MOBILES ?? (process.env.NODE_ENV === 'production' ? '' : '09123456789'))
+      .split(',').map(m => m.trim()).filter(Boolean).map(mobileNumber);
     await client.query("UPDATE users SET role='admin' WHERE mobile=ANY($1::text[])", [admins]);
   });
 }

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import "../globals.css";
 import { getDictionary } from "../dictionaries";
@@ -7,6 +8,7 @@ import { ConciergeFAB } from "../../components/layout/ConciergeFAB";
 import { TopProgressBar } from "../../components/layout/TopProgressBar";
 import { CartProvider } from "../../context/CartContext";
 import { CollectionProvider } from "../../context/CollectionContext";
+import { getStorefrontSettings } from "../../services/store-settings";
 
 export const metadata: Metadata = {
   title: "ARIWATCH | Luxury Watches",
@@ -22,7 +24,7 @@ export default async function RootLayout({
 }>) {
   const { lang: requestedLang } = await params;
   const lang = requestedLang === "en" ? "en" : "fa";
-  const dict = await getDictionary(lang);
+  const [dict, settings] = await Promise.all([getDictionary(lang), getStorefrontSettings()]);
   const isFa = lang === 'fa';
 
   return (
@@ -30,13 +32,31 @@ export default async function RootLayout({
       <body className={`${isFa ? 'font-vazir' : 'font-inter'} bg-white text-ariwatch-black`}>
         <CartProvider>
           <CollectionProvider>
-          <TopProgressBar />
-          <Header lang={lang} dict={dict} isFa={isFa} />
-          <main className="min-h-screen bg-white">
-            {children}
-          </main>
-          <Footer lang={lang} dict={dict} isFa={isFa} />
-          <ConciergeFAB lang={lang} dict={dict} isFa={isFa} />
+            <Suspense fallback={null}>
+              <TopProgressBar />
+            </Suspense>
+            <Suspense fallback={<div className="h-16 md:h-20" />}>
+              <Header
+                lang={lang}
+                dict={dict}
+                isFa={isFa}
+                config={settings.storefront.header}
+                heroStyle={settings.heroStyle}
+              />
+            </Suspense>
+            <main className="min-h-screen bg-white">
+              {children}
+            </main>
+            <Footer
+              lang={lang}
+              dict={dict}
+              isFa={isFa}
+              config={settings.storefront.footer}
+              whatsappUrl={settings.storefront.header.whatsappUrl}
+            />
+            {settings.storefront.spotlights.showFloatingConcierge && (
+              <ConciergeFAB lang={lang} dict={dict} isFa={isFa} />
+            )}
           </CollectionProvider>
         </CartProvider>
       </body>

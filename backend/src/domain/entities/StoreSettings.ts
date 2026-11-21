@@ -1,3 +1,9 @@
-export const HERO_STYLES = ['watch-photos', 'classic-clock'] as const;
-export type HeroStyle = typeof HERO_STYLES[number];
-export interface StoreSettings { shippingCost: number; heroStyle: HeroStyle; }
+import type { HeroStyle, StorefrontConfig } from './StorefrontConfig';
+
+export * from './StorefrontConfig';
+
+export interface StoreSettings {
+  shippingCost: number;
+  heroStyle: HeroStyle;
+  storefront: StorefrontConfig;
+}

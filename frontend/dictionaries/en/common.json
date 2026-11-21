@@ -2,7 +2,10 @@
   "header": {
     "contact": "CONTACT",
     "whatsapp": "WHATSAPP",
+    "contactWhatsapp": "CONTACT WHATSAPP",
+    "menu": "MENU",
     "search": "SEARCH",
+    "searchPlaceholder": "Search models, colours or watch types",
     "account": "ACCOUNT",
     "profile": "PROFILE",
     "logout": "LOGOUT",
@@ -16,7 +19,31 @@
     "home": "HOME",
     "story": "THE STORY",
     "support": "SUPPORT",
-    "concierge": "CONCIERGE"
+    "concierge": "CONCIERGE",
+    "mega": {
+      "allWatches": "ALL WATCHES",
+      "inStock": "IN STOCK",
+      "men": "MEN",
+      "women": "WOMEN",
+      "allOriginal": "ALL ORIGINAL WATCHES",
+      "originalInStock": "ORIGINAL IN STOCK",
+      "originalMen": "ORIGINAL MEN",
+      "originalWomen": "ORIGINAL WOMEN",
+      "originalBrands": "ORIGINAL BRANDS",
+      "allHighCopy": "ALL HIGH COPY WATCHES",
+      "highCopyInStock": "HIGH COPY IN STOCK",
+      "highCopyMen": "HIGH COPY MEN",
+      "highCopyWomen": "HIGH COPY WOMEN",
+      "highCopyBrands": "HIGH COPY BRANDS",
+      "originalOrder": "ORIGINAL ORDER",
+      "highCopyOrder": "HIGH COPY ORDER",
+      "requestModel": "REQUEST A MODEL",
+      "priceAvailability": "PRICE & AVAILABILITY",
+      "originalVsHighCopy": "ORIGINAL VS HIGH COPY",
+      "purchaseGuide": "PURCHASE GUIDE",
+      "shippingPayment": "SHIPPING & PAYMENT",
+      "faq": "FAQ"
+    }
   },
   "auth": {
     "title": "LOGIN OR REGISTER",
@@ -70,7 +97,8 @@
     "AUDEMARS PIGUET",
     "PATEK PHILIPPE",
     "OMEGA",
-    "A. LANGE & SÖHNE"
+    "IWC",
+    "OMEGA SWATCH"
   ],
   "legal": {
     "termsTitle": "TERMS OF USE",

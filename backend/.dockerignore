@@ -1,5 +1,9 @@
 node_modules
 dist
 tests
+uploads
 .env
+.env.*
 *.log
+*.tsbuildinfo
+.git

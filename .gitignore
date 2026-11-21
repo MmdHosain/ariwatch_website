@@ -4,9 +4,11 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.production.example
 *.tsbuildinfo
 *.log
 .preview-db/
 .pnpm-store/
 tmp/
+backups/
 backend/uploads/

@@ -1,0 +1,33 @@
+# Optional Caddy reverse proxy with automatic Let's Encrypt HTTPS certificates.
+# Combine with production overlay:
+#   docker compose -f docker-compose.yml -f docker-compose.production.yml -f docker-compose.proxy.yml up --build -d
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      STORE_DOMAIN: ${STORE_DOMAIN:?Set STORE_DOMAIN (e.g. ariwatch.ir)}
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN (e.g. api.ariwatch.ir)}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  caddy_data:
+  caddy_config:

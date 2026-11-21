@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "build": "tsc && node scripts/copy-assets.cjs",
-    "test": "tsc && node scripts/copy-assets.cjs && node --test tests/*.test.cjs",
+    "test": "tsc && node scripts/copy-assets.cjs && node scripts/run-tests.cjs",
     "start": "node dist/presentation/server.js",
     "dev": "ts-node-dev --respawn src/presentation/server.ts"
   },

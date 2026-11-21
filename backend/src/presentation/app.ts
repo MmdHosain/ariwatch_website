@@ -52,6 +52,14 @@ export function createApp(options: { db?: Database; auth?: AuthService; gateway?
   const bot = new TelegramBot(db, orders, catalog);
   app.locals.integrations = integrations;
   app.locals.notifications = notifications;
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    if (process.env.NODE_ENV === 'production') res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    next();
+  });
   const origins = (process.env.FRONTEND_ORIGIN || 'http://localhost:3000').split(',').map(origin => origin.trim()).filter(Boolean);
   app.use((req, res, next) => {
     const origin = req.header('Origin');
@@ -66,10 +74,14 @@ export function createApp(options: { db?: Database; auth?: AuthService; gateway?
   });
   app.use(express.json({ limit: '64kb' }));
   const mediaDirectory = resolve(process.env.MEDIA_DIRECTORY || resolve(__dirname, '../../uploads/catalog'));
-  app.use('/media/catalog', express.static(mediaDirectory, { dotfiles: 'deny', index: false, setHeaders: res => {
+  app.use('/media/catalog', express.static(mediaDirectory, { dotfiles: 'deny', index: false, maxAge: '7d', setHeaders: res => {
     res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Content-Security-Policy', "default-src 'none'");
   } }));
   app.get('/health', (_req, res) => { res.json({ status: 'OK' }); });
+  app.get('/ready', async (_req, res) => {
+    try { await db.query('SELECT 1'); res.json({ status: 'READY' }); }
+    catch { res.status(503).json({ status: 'UNAVAILABLE' }); }
+  });
   app.use('/api/auth', createAuthRoutes(auth));
   app.use('/api/watches', createWatchRoutes(auth, catalog));
   app.use('/api/wishlist', createWishlistRoutes(auth, db));

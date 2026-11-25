@@ -1,0 +1,99 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ariwatch-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ariwatch_postgres_data:/var/lib/postgresql/data
+    networks:
+      - ariwatch_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    image: ghcr.io/mmdhosain/ariwatch-backend:${IMAGE_TAG:-main}
+    container_name: ariwatch-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      HOST: 0.0.0.0
+      PORT: 4000
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-20}
+      ADMIN_MOBILES: ${ADMIN_MOBILES}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-https://ariwatch.ir}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-https://api.ariwatch.ir}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-false}
+      ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID}
+      OTP_PROVIDER_URL: ${OTP_PROVIDER_URL:-}
+      OTP_PROVIDER_TOKEN: ${OTP_PROVIDER_TOKEN:-}
+      SEED_CATALOG: ${SEED_CATALOG:-false}
+      MEDIA_DIRECTORY: /app/uploads/catalog
+    volumes:
+      - ariwatch_catalog_media:/app/uploads/catalog
+    networks:
+      - ariwatch_internal
+      - proxy
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    image: ghcr.io/mmdhosain/ariwatch-frontend:${IMAGE_TAG:-main}
+    container_name: ariwatch-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:-https://api.ariwatch.ir}
+      NEXT_PUBLIC_SITE_URL: ${FRONTEND_ORIGIN:-https://ariwatch.ir}
+      INTERNAL_API_URL: http://ariwatch-backend:4000
+    networks:
+      - ariwatch_internal
+      - proxy
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  ariwatch_internal:
+    driver: bridge
+  proxy:
+    external: true
+
+volumes:
+  ariwatch_postgres_data:
+  ariwatch_catalog_media:

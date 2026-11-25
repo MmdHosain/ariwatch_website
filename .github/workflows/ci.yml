@@ -5,6 +5,10 @@ on:
     branches: [main, master]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   validate:
     name: Architecture, Tests & Builds
@@ -49,18 +53,109 @@ jobs:
           pnpm build
 
   docker:
-    name: Docker Image Build Check
+    name: Docker Image Build & Push
     needs: validate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build backend production image
-        run: docker build -t ariwatch-backend:ci ./backend
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Build frontend production image
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ghcr.io/mmdhosain/ariwatch-backend:main
+            ghcr.io/mmdhosain/ariwatch-backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://api.ariwatch.ir
+            NEXT_PUBLIC_SITE_URL=https://ariwatch.ir
+          tags: |
+            ghcr.io/mmdhosain/ariwatch-frontend:main
+            ghcr.io/mmdhosain/ariwatch-frontend:${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+  deploy:
+    name: Deploy to VPS
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
         run: |
-          docker build -t ariwatch-frontend:ci \
-            --build-arg NEXT_PUBLIC_API_URL=https://api.example.com \
-            --build-arg NEXT_PUBLIC_SITE_URL=https://shop.example.com \
-            ./frontend
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Sync compose file and deploy on VPS
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER || 'root' }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/srv/ariwatch' }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" deploy/docker-compose.vps.yml "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/docker-compose.vps.yml"
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "${SSH_USER}@${SSH_HOST}" bash -s <<EOF
+          set -euo pipefail
+          cd "${DEPLOY_PATH}"
+          if [ ! -f .env ]; then
+            echo "ERROR: ${DEPLOY_PATH}/.env not found."
+            exit 1
+          fi
+          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
+          export IMAGE_TAG="${IMAGE_TAG}"
+          docker compose -p ariwatch -f docker-compose.vps.yml pull
+          docker compose -p ariwatch -f docker-compose.vps.yml up -d --remove-orphans
+          for i in \$(seq 1 30); do
+            if docker compose -p ariwatch -f docker-compose.vps.yml exec -T backend node -e "fetch('http://127.0.0.1:4000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1 \
+              && docker compose -p ariwatch -f docker-compose.vps.yml exec -T frontend node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1; then
+              echo "Deployment succeeded!"
+              docker image prune -f >/dev/null 2>&1 || true
+              docker compose -p ariwatch -f docker-compose.vps.yml ps
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "ERROR: Services did not become healthy in time."
+          docker compose -p ariwatch -f docker-compose.vps.yml logs --tail=50
+          exit 1
+          EOF
